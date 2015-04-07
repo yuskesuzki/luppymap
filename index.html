@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <title>函館ラッピ地図</title>
+        <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="css/leaflet.css" />
+        <link rel="stylesheet" href="js/L.Control.Locate.min.css" />
+        <link rel="stylesheet" href="js/L.Control.Locate.ie.min.css" />
+        <script src="js/leaflet.js"></script>
+        <script src="js/leaflet.ajax.min.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/jquery-2.1.1.min.js"></script>
+        <style type="text/css">
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+        }
+        #mainMenu {
+            background-color: #CCC;
+        }
+        #mainMenu h1 {
+            float: left;
+            font-size: 15pt;
+            margin-top: 0;
+            margin-bottom: 0;
+            margin-right: 1em;
+        }
+        #mainMenu div {
+            padding-left: 1em;
+            padding-top: 0.5em;
+        }
+        </style>
+    </head>
+    <body>
+        <div id="mainMenu">
+            <h1>函館ラッピ地図</h1>
+            <div>
+                店舗移動:
+                <select id="moveTo" onChange="moveToFunc()">
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+        <span style="clear: both;"></span>
+        <div id="map"></div>
+        <script>
+            var stores = [];
+            var moveToList = {};
+            var hash = null;
+
+            // 地図・初期位置の定義
+            var latlng = L.latLng(41.76840, 140.72924);
+            var map = L.map('map').setView(latlng, 16);
+            L.tileLayer(
+                'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                    '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ',
+                    id: 'examples.map-i875mjb7'
+                }).addTo(map);
+
+            // GeoJson読み込み時に行う処理
+            function onEachFeatureFunc(feature,layer) {
+                setPopup(feature,layer);
+                setStores(feature,layer);
+                setMoveToList(feature,layer);
+            }
+
+            // 店舗情報管理用変数に値をセット
+            function setStores(feature,layer) {
+                if (feature.properties){
+                    obj = {};
+                    obj['name'] = feature.properties['支店名'];
+                    obj['lon']  = feature.properties['lon'];
+                    obj['lat']  = feature.properties['lat'];
+                    obj['layer'] = layer;
+                    stores.push(obj);
+                    moveToList[feature.properties['支店名']] = obj;
+                }
+            }
+
+            // 地点クリック時のポップアップ
+            function setPopup(feature,layer) {
+                if (feature.properties){
+                    contents  = '<h2>' +feature.properties['支店名']+ '</h2>';
+                    contents += '<table>';
+                    contents += '    <tr>';
+                    contents += '        <td>特徴</td>';
+                    contents += '        <td>'+feature.properties['特徴']+'</td>';
+                    contents += '    </tr>';
+                    contents += '    <tr>';
+                    contents += '        <td>住所</td>';
+                    contents += '        <td>'+feature.properties['住所']+'</td>';
+                    contents += '    </tr>';
+                    contents += '    <tr>';
+                    contents += '        <td>TEL</td>';
+                    contents += '        <td>'+feature.properties['TEL']+'</td>';
+                    contents += '    </tr>';
+                    contents += '    <tr>';
+                    contents += '        <td>営業時間</td>';
+                    contents += '        <td>'+feature.properties['営業時間開始']+'〜'+feature.properties['営業時間終了']+'</td>';
+                    contents += '    </tr>';
+                    contents += '    <tr>';
+                    contents += '        <td>店長おすすめ</td>';
+                    contents += '        <td>'+feature.properties['店長おすすめ']+'</td>';
+                    contents += '    </tr>';
+                    contents += '</table>';
+
+                    layer.bindPopup(contents);
+                }
+            }
+
+            // 店舗移動セレクトボックスにアイテム追加
+            function setMoveToList(feature, layer) {
+                if (feature.properties){
+                    $('#moveTo').append(
+                        $('<option>').html(feature.properties['支店名']).val(feature.properties['支店名'])
+                        );
+                }
+            }
+
+            // 店舗移動セレクトボックス選択時の挙動
+            function moveToFunc() {
+                selected = $('#moveTo').val();
+                moveToStore(selected);
+            }
+
+            // 指定した店名の緯度経度に移動する
+            function moveToStore(storeName) {
+                if(nowMarker != null) {
+                    map.removeLayer(nowMarker);
+                }
+                // 描いた線を削除
+                if(nowPolyline != null) {
+                    map.removeLayer(nowPolyline);
+                }
+                clickflg = false;
+
+                if(storeName != null) {
+                    moveToObj = moveToList[storeName];
+                    console.log(moveToObj);
+                    if(moveToObj != null) {
+                        moveLatlng = L.latLng(moveToObj.lat, moveToObj.lon);
+                        map.panTo(moveLatlng, {animate: true});
+                        moveToObj.layer.openPopup();
+                        hash = L.Hash(map);
+                    }
+                }
+            }
+
+            // GeoJSON読み取り時に地図上にマッピングした場所に配置するアイコン画像を変更する関数
+            function pointToLayerFunc(f, l) {
+                var storeIcon = L.icon({
+                    iconUrl: 'img/aprilfool_piert_face.png',
+                    iconSize: [40, 35], // size of the icon
+                });
+                return L.marker(l, {icon: storeIcon});
+            }
+
+            // GeoJson読み込み
+            var geojsonLayer = new L.GeoJSON.AJAX("data/lucky.geojson",
+            {onEachFeature:onEachFeatureFunc, pointToLayer: pointToLayerFunc}
+            );
+            geojsonLayer.addTo(map);
+
+            var clickflg    = false;
+            var nowMarker   = null;
+            var nowPolyline = null;
+            var popup = L.popup();
+
+            // 地図クリック時の処理
+            function onMapClick(e) {
+                // 描いたマーカーを削除
+                if(nowMarker != null) {
+                    map.removeLayer(nowMarker);
+                }
+                // 描いた線を削除
+                if(nowPolyline != null) {
+                    map.removeLayer(nowPolyline);
+                }
+                if(clickflg) {
+                    clickflg = false;
+                    return;
+                }
+
+                var latlng = e.latlng;
+                store = findNearStore(latlng);
+                storeLatLng = L.latLng(store.lat, store.lon);
+                storePoint = map.latLngToLayerPoint(storeLatLng);
+
+                var latlngs = [latlng, storeLatLng];
+                nowPolyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
+                nowMarker = L.marker(latlng).addTo(map);
+
+                anchor   = '<a href="javascript:moveToStore(\'' + store.name + '\')">';
+                anchor  += store.name + '</a>';
+
+                content  = "最寄りの店舗:" + anchor + "<br/>";
+                distance = parseInt(storeLatLng.distanceTo(latlng));
+                unit     = 'm';
+                if(distance > 1000) {
+                    distance = distance / 1000;
+                    unit = 'km';
+                }
+                content += "直線距離:" + distance + unit;
+                //  + "m";
+                popup
+                    .setLatLng(latlng)
+                    .setContent(content)
+                    .openOn(map);
+                clickflg = true;
+            }
+            map.on('click', onMapClick);
+
+            // クリック地点より直線距離が最も近い店舗を検索して戻す
+            function findNearStore(latlng) {
+                var retobj = null;
+                var preDistance = 0;
+                for(var i=0; i<stores.length; i++) {
+                    storeLatLng = L.latLng(stores[i].lat, stores[i].lon);
+                    distance = storeLatLng.distanceTo(latlng);
+                    if(retobj != null) {
+                        if(distance < preDistance) {
+                            retobj = stores[i];
+                            preDistance = distance;
+                        }
+                    } else {
+                        retobj = stores[i];
+                        preDistance = distance;
+                    }
+                }
+                return retobj;
+            }
+
+            // スケールを追加
+            L.control.scale().addTo(map);
+
+            // URLハッシュ
+            hash = new L.Hash(map);
+
+            // ロケーションコントロール
+            L.control.locate().addTo(map);
+        </script>
+    </body>
+</html>
