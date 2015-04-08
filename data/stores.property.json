@@ -1,0 +1,10 @@
+{
+    "ラッキーピエロ": {
+        "iconUrl": "img/aprilfool_piert_face.png",
+        "iconSize": [40, 35]
+    },
+    "ハセガワストア": {
+        "iconUrl": "img/food_yakitori.png",
+        "iconSize": [23, 40]
+    }
+}

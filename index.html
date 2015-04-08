@@ -53,6 +53,14 @@
             var stores = [];
             var moveToList = {};
             var hash = null;
+            var storesProperty = {};
+
+            // 店舗別プロパティを読み込み
+            $.getJSON('data/stores.property.json', function(data) {
+                for(store in data) {
+                    storesProperty[store] = data[store];
+                }
+            });
 
             // 地図・初期位置の定義
             var latlng = L.latLng(41.76840, 140.72924);
@@ -61,7 +69,7 @@
                 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 18,
                     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-                    '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ',
+                    '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
                     id: 'examples.map-i875mjb7'
                 }).addTo(map);
 
@@ -75,20 +83,32 @@
             // 店舗情報管理用変数に値をセット
             function setStores(feature,layer) {
                 if (feature.properties){
+                    var storeName = feature.properties['店舗名'] + ' ' + feature.properties['支店名'];
                     obj = {};
-                    obj['name'] = feature.properties['支店名'];
+                    obj['name'] = storeName;
                     obj['lon']  = feature.properties['lon'];
                     obj['lat']  = feature.properties['lat'];
                     obj['layer'] = layer;
                     stores.push(obj);
-                    moveToList[feature.properties['支店名']] = obj;
+                    moveToList[storeName] = obj;
                 }
             }
 
             // 地点クリック時のポップアップ
             function setPopup(feature,layer) {
                 if (feature.properties){
-                    contents  = '<h2>' +feature.properties['支店名']+ '</h2>';
+                    // 営業時間
+                    var businessHour = '';
+                    if(feature.properties['営業時間開始'] == '0:00' && feature.properties['営業時間終了'] == '0:00') {
+                        businessHour = '24時間';
+                    } else {
+                        businessHour = feature.properties['営業時間開始'] + '〜' + feature.properties['営業時間終了'];
+                    }
+
+                    // 店舗名称
+                    var storeName = feature.properties['店舗名'] + ' ' + feature.properties['支店名'];
+
+                    contents  = '<h2>' +storeName+ '</h2>';
                     contents += '<table>';
                     contents += '    <tr>';
                     contents += '        <td>特徴</td>';
@@ -104,12 +124,14 @@
                     contents += '    </tr>';
                     contents += '    <tr>';
                     contents += '        <td>営業時間</td>';
-                    contents += '        <td>'+feature.properties['営業時間開始']+'〜'+feature.properties['営業時間終了']+'</td>';
+                    contents += '        <td>'+businessHour+'</td>';
                     contents += '    </tr>';
-                    contents += '    <tr>';
-                    contents += '        <td>店長おすすめ</td>';
-                    contents += '        <td>'+feature.properties['店長おすすめ']+'</td>';
-                    contents += '    </tr>';
+                    if(feature.properties['店長おすすめ'] != "") {
+                        contents += '    <tr>';
+                        contents += '        <td>店長おすすめ</td>';
+                        contents += '        <td>'+feature.properties['店長おすすめ']+'</td>';
+                        contents += '    </tr>';
+                    }
                     contents += '</table>';
 
                     layer.bindPopup(contents);
@@ -119,8 +141,9 @@
             // 店舗移動セレクトボックスにアイテム追加
             function setMoveToList(feature, layer) {
                 if (feature.properties){
+                    var storeName = feature.properties['店舗名'] + ' ' + feature.properties['支店名'];
                     $('#moveTo').append(
-                        $('<option>').html(feature.properties['支店名']).val(feature.properties['支店名'])
+                        $('<option>').html(storeName).val(storeName)
                         );
                 }
             }
@@ -155,12 +178,16 @@
             }
 
             // GeoJSON読み取り時に地図上にマッピングした場所に配置するアイコン画像を変更する関数
-            function pointToLayerFunc(f, l) {
+            function pointToLayerFunc(feature, layer) {
+                // アイコン画像は stores.property.json から読み込んだ storesProperty より取得
+                iconUrl  = storesProperty[feature.properties['店舗名']].iconUrl;
+                iconSize = storesProperty[feature.properties['店舗名']].iconSize;
+
                 var storeIcon = L.icon({
-                    iconUrl: 'img/aprilfool_piert_face.png',
-                    iconSize: [40, 35], // size of the icon
+                    iconUrl: iconUrl,
+                    iconSize: iconSize, // size of the icon
                 });
-                return L.marker(l, {icon: storeIcon});
+                return L.marker(layer, {icon: storeIcon});
             }
 
             // GeoJson読み込み
@@ -208,8 +235,9 @@
                     distance = distance / 1000;
                     unit = 'km';
                 }
-                content += "直線距離:" + distance + unit;
-                //  + "m";
+                content += "直線距離:" + distance + unit + "<br/>";
+                // content += latlng.lng + ", " + latlng.lat;
+
                 popup
                     .setLatLng(latlng)
                     .setContent(content)
