@@ -55,25 +55,34 @@
             var stores = [];
             var moveToList = {};
             var hash = null;
-            var storesProperty = {};
 
             // 店舗別プロパティを読み込み
+            var storesProperty = {};
             $.getJSON('data/stores.property.json', function(data) {
                 for(store in data) {
                     storesProperty[store] = data[store];
                 }
             });
 
-            // 地図・初期位置の定義
-            var latlng = L.latLng(41.76840, 140.72924);
-            var map = L.map('map').setView(latlng, 16);
-            L.tileLayer(
-                'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 18,
-                    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-                    '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-                    id: 'examples.map-i875mjb7'
-                }).addTo(map);
+            // 店舗geoJsonを読み込み
+            var storeGroup1 = L.layerGroup(); // ラッキーピエロ用
+            var storeGroup2 = L.layerGroup(); // ハセガワストア用
+
+            // GeoJsonから店舗情報読み込み
+            storeGroup1 = new L.GeoJSON.AJAX('data/lucky.geojson',
+                {
+                    onEachFeature: onEachFeatureFunc,
+                    pointToLayer: pointToLayerFunc,
+                    filter: storeGroup1Filter
+                }
+            );
+            storeGroup2 = new L.GeoJSON.AJAX('data/lucky.geojson',
+                {
+                    onEachFeature: onEachFeatureFunc,
+                    pointToLayer: pointToLayerFunc,
+                    filter: storeGroup2Filter
+                }
+            );
 
             // GeoJson読み込み時に行う処理
             function onEachFeatureFunc(feature,layer) {
@@ -180,7 +189,7 @@
             }
 
             // GeoJSON読み取り時に地図上にマッピングした場所に配置するアイコン画像を変更する関数
-            function pointToLayerFunc(feature, layer) {
+            function pointToLayerFunc(feature, latlng) {
                 // アイコン画像は stores.property.json から読み込んだ storesProperty より取得
                 iconUrl  = storesProperty[feature.properties['店舗名']].iconUrl;
                 iconSize = storesProperty[feature.properties['店舗名']].iconSize;
@@ -191,14 +200,53 @@
                 });
 
                 var storeName = feature.properties['店舗名'] + '<br/>' + feature.properties['支店名'];
-                return L.marker(layer, {icon: storeIcon}).bindLabel(storeName);
+                return L.marker(latlng, {icon: storeIcon}).bindLabel(storeName);
             }
 
-            // GeoJson読み込み
-            var geojsonLayer = new L.GeoJSON.AJAX("data/lucky.geojson",
-            {onEachFeature:onEachFeatureFunc, pointToLayer: pointToLayerFunc}
-            );
-            geojsonLayer.addTo(map);
+            // ラッキーピエロ店舗抽出用フィルター
+            function storeGroup1Filter(feature, layer) {
+                if(feature.properties['店舗名'] == 'ラッキーピエロ') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            // ハセガワストア店舗抽出用フィルター
+            function storeGroup2Filter(feature, layer) {
+                if(feature.properties['店舗名'] == 'ハセガワストア') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            // 地図タイルレイヤ
+            var osm = L.tileLayer(
+                'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                    '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+                    id: 'examples.map-i875mjb7'
+                });
+
+            // L.map準備
+            var latlng = L.latLng(41.76840, 140.72924); // 地図初期位置
+            var map = L.map('map', {
+                center: latlng,
+                zoom: 16,
+                layers: [osm, storeGroup1, storeGroup2]
+            });
+
+            var baseMaps = {
+                "OSM": osm
+            };
+
+            var overlayMaps = {
+                'ラッキーピエロ': storeGroup1,
+                'ハセガワストア': storeGroup2,
+            }
+            L.control.layers(baseMaps, overlayMaps).addTo(map);
 
             var clickflg    = false;
             var nowMarker   = null;
@@ -273,7 +321,7 @@
             // スケールを追加
             L.control.scale().addTo(map);
 
-            // URLハッシュ
+            // URLハッシュを有効に
             hash = new L.Hash(map);
 
             // ロケーションコントロール
