@@ -8,9 +8,11 @@
         <link rel="stylesheet" href="css/leaflet.css" />
         <link rel="stylesheet" href="js/L.Control.Locate.min.css" />
         <link rel="stylesheet" href="js/L.Control.Locate.ie.min.css" />
+        <link rel="stylesheet" href="js/leaflet.label.css" />
         <script src="js/leaflet.js"></script>
         <script src="js/leaflet.ajax.min.js"></script>
         <script src="js/leaflet-hash.js"></script>
+        <script src="js/leaflet.label.js"></script>
         <script src="js/L.Control.Locate.min.js"></script>
         <script src="js/jquery-2.1.1.min.js"></script>
         <style type="text/css">
@@ -187,7 +189,9 @@
                     iconUrl: iconUrl,
                     iconSize: iconSize, // size of the icon
                 });
-                return L.marker(layer, {icon: storeIcon});
+
+                var storeName = feature.properties['店舗名'] + '<br/>' + feature.properties['支店名'];
+                return L.marker(layer, {icon: storeIcon}).bindLabel(storeName);
             }
 
             // GeoJson読み込み

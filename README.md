@@ -11,10 +11,13 @@
 
 ## 利用しているライブラリ
 
-- leaflet.js 0.7.3
-- leaflet-hash
-- leaflet-ajax
-- leaflet-locatecontrol
+本マップは以下のJavaScriptライブラリを利用して表示を行っています。
+
+- Leaflet.js 0.7.3
+- Leaflet-hash
+- Leaflet-ajax
+- Leaflet-locatecontrol
+- Leaflet.Label
 - jQuery 2.1.1
 
 ## 画像
