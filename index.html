@@ -96,7 +96,8 @@
                 if (feature.properties){
                     var storeName = feature.properties['店舗名'] + ' ' + feature.properties['支店名'];
                     obj = {};
-                    obj['name'] = storeName;
+                    obj['store'] = feature.properties['店舗名'];
+                    obj['name']  = storeName;
                     obj['lon']  = feature.properties['lon'];
                     obj['lat']  = feature.properties['lat'];
                     obj['layer'] = layer;
@@ -302,7 +303,37 @@
             function findNearStore(latlng) {
                 var retobj = null;
                 var preDistance = 0;
+
+                // レイヤー可視状態チェック
+                storeGroup1check = false;
+                storeGroup2check = false;
+
+                // 店舗1レイヤーグループに含むレイヤーがマップに表示されているかチェック
+                storeGroup1.eachLayer(function(layer){
+                    if(map.hasLayer(layer)) {
+                        storeGroup1check = true;
+                        return;
+                    }
+                });
+                // 店舗2レイヤーグループに含むレイヤーがマップに表示されているかチェック
+                storeGroup2.eachLayer(function(layer){
+                    if(map.hasLayer(layer)) {
+                        storeGroup2check = true;
+                        return;
+                    }
+                });
+
                 for(var i=0; i<stores.length; i++) {
+                    // 店舗1が非表示状態の場合ループを中断
+                    if(!storeGroup1check && stores[i].store == 'ラッキーピエロ') {
+                        continue;
+                    }
+                    // 店舗2が非表示状態の場合ループを中断
+                    if(!storeGroup2check && stores[i].store == 'ハセガワストア') {
+                        continue;
+                    }
+
+                    // 店舗座標とクリック位置の距離を測定。最も近い店舗を探す
                     storeLatLng = L.latLng(stores[i].lat, stores[i].lon);
                     distance = storeLatLng.distanceTo(latlng);
                     if(retobj != null) {
