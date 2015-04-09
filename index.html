@@ -25,6 +25,9 @@
         html, body, #map {
             height: 100%;
         }
+        td.header {
+            vertical-align: top;
+        }
         </style>
     </head>
     <body>
@@ -153,25 +156,44 @@
                     contents  = '<h2>' +storeName+ '</h2>';
                     contents += '<table>';
                     contents += '    <tr>';
-                    contents += '        <td>特徴</td>';
+                    contents += '        <td class="header">特徴</td>';
                     contents += '        <td>'+feature.properties['特徴']+'</td>';
                     contents += '    </tr>';
                     contents += '    <tr>';
-                    contents += '        <td>住所</td>';
+                    contents += '        <td class="header">住所</td>';
                     contents += '        <td>'+feature.properties['住所']+'</td>';
                     contents += '    </tr>';
                     contents += '    <tr>';
-                    contents += '        <td>TEL</td>';
+                    contents += '        <td class="header">TEL</td>';
                     contents += '        <td>'+feature.properties['TEL']+'</td>';
                     contents += '    </tr>';
                     contents += '    <tr>';
-                    contents += '        <td>営業時間</td>';
-                    contents += '        <td>'+businessHour+'</td>';
+                    contents += '        <td class="header">営業時間</td>';
+                    contents += '        <td>'
+                    contents += businessHour;
+                    if(feature.properties['駐車場台数'] > 0) {
+                        contents += "<br/>駐車場:" + feature.properties['駐車場台数'] + '台';
+                    }
+                    if(feature.properties['席数'] > 0) {
+                        contents += "<br/>席数:" + feature.properties['席数'];
+                    }
+                    contents += '        </td>';
                     contents += '    </tr>';
                     if(feature.properties['店長おすすめ'] != "") {
                         contents += '    <tr>';
-                        contents += '        <td>店長おすすめ</td>';
+                        contents += '        <td class="header">店長おすすめ</td>';
                         contents += '        <td>'+feature.properties['店長おすすめ']+'</td>';
+                        contents += '    </tr>';
+                    }
+                    if(feature.properties['URL'] != null) {
+                        contents += '    <tr>';
+                        contents += '        <td class="header">店舗HP</td>';
+                        contents += '        <td>';
+                        contents += '        <a href="' +feature.properties['URL']+ '" target="_new">[PC]</a> ';
+                        if(feature.properties['mobileURL'] != null) {
+                            contents += '        <a href="' +feature.properties['mobileURL']+ '" target="_new">[スマホ]</a>';
+                        }
+                        contents += '        </td>';
                         contents += '    </tr>';
                     }
                     contents += '</table>';
