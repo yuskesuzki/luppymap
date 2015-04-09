@@ -9,11 +9,13 @@
         <link rel="stylesheet" href="js/L.Control.Locate.min.css" />
         <link rel="stylesheet" href="js/L.Control.Locate.ie.min.css" />
         <link rel="stylesheet" href="js/leaflet.label.css" />
+        <link rel="stylesheet" href="js/leaflet.moveToList.css" />
         <script src="js/leaflet.js"></script>
         <script src="js/leaflet.ajax.min.js"></script>
         <script src="js/leaflet-hash.js"></script>
         <script src="js/leaflet.label.js"></script>
         <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.moveToList.js"></script>
         <script src="js/jquery-2.1.1.min.js"></script>
         <style type="text/css">
         body {
@@ -23,34 +25,11 @@
         html, body, #map {
             height: 100%;
         }
-        #mainMenu {
-            background-color: #CCC;
-        }
-        #mainMenu h1 {
-            float: left;
-            font-size: 15pt;
-            margin-top: 0;
-            margin-bottom: 0;
-            margin-right: 1em;
-        }
-        #mainMenu div {
-            padding-left: 1em;
-            padding-top: 0.5em;
-        }
         </style>
     </head>
     <body>
-        <div id="mainMenu">
-            <h1>函館ラッピ地図</h1>
-            <div>
-                店舗移動:
-                <select id="moveTo" onChange="moveToFunc()">
-                    <option value=""></option>
-                </select>
-            </div>
-        </div>
-        <span style="clear: both;"></span>
         <div id="map"></div>
+
         <script>
             var stores = [];
             var moveToList = {};
@@ -107,6 +86,10 @@
                         layers: [osm, storeGroup1, storeGroup2]
                     });
 
+                    // 店舗移動用セレクトボックス表示とセレクトボックス要素の設定
+                    L.control.moveToList().addTo(map);
+                    addMoveToList(storeJson);
+
                     // レイヤーコントロールを表示
                     baseMaps = {
                         "OSM": osm
@@ -136,7 +119,6 @@
             function onEachFeatureFunc(feature,layer) {
                 setPopup(feature,layer);
                 setStores(feature,layer);
-                setMoveToList(feature,layer);
             }
 
             // 店舗情報管理用変数に値をセット
@@ -196,22 +178,6 @@
 
                     layer.bindPopup(contents);
                 }
-            }
-
-            // 店舗移動セレクトボックスにアイテム追加
-            function setMoveToList(feature, layer) {
-                if (feature.properties){
-                    var storeName = feature.properties['店舗名'] + ' ' + feature.properties['支店名'];
-                    $('#moveTo').append(
-                        $('<option>').html(storeName).val(storeName)
-                        );
-                }
-            }
-
-            // 店舗移動セレクトボックス選択時の挙動
-            function moveToFunc() {
-                selected = $('#moveTo').val();
-                moveToStore(selected);
             }
 
             // 指定した店名の緯度経度に移動する

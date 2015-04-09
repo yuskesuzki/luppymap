@@ -1,0 +1,22 @@
+/**
+ * leaflet.moveToList.css
+ *
+ * (c) 2015 Yusuke Suzuki.
+ */
+.moveTo-container {
+    padding: 0.25em;
+    background-color: #fff;
+    box-shadow: none;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    background-clip: padding-box;
+}
+.moveTo-container h1 {
+    font-size: 15pt;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-right: 1em;
+}
+.moveTo-container div {
+    padding-left: 1em;
+    padding-top: 0.5em;
+}
