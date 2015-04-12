@@ -10,12 +10,15 @@
         <link rel="stylesheet" href="js/L.Control.Locate.ie.min.css" />
         <link rel="stylesheet" href="js/leaflet.label.css" />
         <link rel="stylesheet" href="js/leaflet.moveToList.css" />
+        <link rel="stylesheet" href="js/leaflet-routing-machine.css" />
+
         <script src="js/leaflet.js"></script>
         <script src="js/leaflet.ajax.min.js"></script>
         <script src="js/leaflet-hash.js"></script>
         <script src="js/leaflet.label.js"></script>
         <script src="js/L.Control.Locate.min.js"></script>
         <script src="js/leaflet.moveToList.js"></script>
+        <script src="js/leaflet-routing-machine.min.js"></script>
         <script src="js/jquery-2.1.1.min.js"></script>
         <style type="text/css">
         body {
@@ -44,6 +47,50 @@
             var storeGroup2 = L.layerGroup(); // ハセガワストア用
 
             var map = null;
+
+            // L.Routing.Localizationに日本語リソースを追加
+            L.Routing.Localization['ja'] = {
+                directions: {
+                    N: '北',
+                    NE: '北東',
+                    E: '東',
+                    SE: '南東',
+                    S: '南',
+                    SW: '南西',
+                    W: '西',
+                    NW: '北西'
+                },
+                instructions: {
+                    // instruction, postfix if the road is named
+                    'Head':
+                        ['{road} {dir}方向', ''],
+                    'Continue':
+                        ['{road} {dir}方向道なり', ''],
+                    'SlightRight':
+                        ['{road} 右方向', ''],
+                    'Right':
+                        ['{road} 右折',''],
+                    'SharpRight':
+                        ['{road} 右急カーブ', ''],
+                    'TurnAround':
+                        ['Uターン', ''],
+                    'SharpLeft':
+                        ['{road} 左急カーブ', ''],
+                    'Left':
+                        ['{road} 左折', ''],
+                    'SlightLeft':
+                        ['{road} 左方向', ''],
+                    'WaypointReached':
+                        ['分岐点到着'],
+                    'Roundabout':
+                        ['Take the {exitStr} exit in the roundabout', ' onto {road}'],
+                    'DestinationReached':
+                        ['目的地到着'],
+                },
+                formatOrder: function(n) {
+                    return n;
+                }
+            };
 
             // 初期処理
             $(document).ready(function() {
@@ -260,6 +307,7 @@
             var nowMarker   = null;
             var nowPolyline = null;
             var popup = L.popup();
+            var routing = null;
 
             // 地図クリック時の処理
             function onMapClick(e) {
@@ -270,6 +318,10 @@
                 // 描いた線を削除
                 if(nowPolyline != null) {
                     map.removeLayer(nowPolyline);
+                }
+                if(routing != null) {
+                    routing.removeFrom(map);
+                    routing = null;
                 }
                 if(clickflg) {
                     clickflg = false;
@@ -282,7 +334,7 @@
                 storePoint = map.latLngToLayerPoint(storeLatLng);
 
                 var latlngs = [latlng, storeLatLng];
-                nowPolyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
+                // nowPolyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
                 nowMarker = L.marker(latlng).addTo(map);
 
                 anchor   = '<a href="javascript:moveToStore(\'' + store.name + '\')">';
@@ -295,13 +347,25 @@
                     distance = distance / 1000;
                     unit = 'km';
                 }
-                content += "直線距離:" + distance + unit + "<br/>";
+                // content += "直線距離:" + distance + unit + "<br/>";
                 // content += latlng.lng + ", " + latlng.lat; // マーカー部の緯度経度情報を表示
 
                 popup
                     .setLatLng(latlng)
                     .setContent(content)
                     .openOn(map);
+
+                routing = L.Routing.control({
+                    waypoints: [
+                        latlng,
+                        storeLatLng,
+                    ],
+                    // geocoder: L.Control.Geocoder.nominatim(),
+                    routeWhileDragging: true,
+                    reverseWaypoints: true,
+                    language: 'ja'
+                }).addTo(map);
+
                 clickflg = true;
             }
 
